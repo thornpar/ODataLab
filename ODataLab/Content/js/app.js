@@ -1,0 +1,1 @@
+﻿angular.module("ODataLab", ['ngMessages', 'ngAnimate', 'ngRoute','kendo.directives']);
