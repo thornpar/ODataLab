@@ -9,7 +9,7 @@ namespace ODataLab.Migrations
     {
         public Configuration()
         {
-            AutomaticMigrationsEnabled = false;
+            AutomaticMigrationsEnabled = true;
             ContextKey = "ODataLab.Models.EmploymentContext";
         }
 

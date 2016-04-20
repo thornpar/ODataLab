@@ -10,9 +10,15 @@ namespace ODataLab.Models
 {
     public class Employment
     {
+        public Employment()
+        {
+
+        }
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public Guid Id { get; set; }
+
+        public Person person { get; set;}
 
         public string Name { get; set; }
         public decimal Price { get; set; }

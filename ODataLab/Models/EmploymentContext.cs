@@ -14,5 +14,6 @@ namespace ODataLab.Models
         {
         }
         public DbSet<Employment> Employments { get; set; }
+        public DbSet<Person> People { get; set; }
     }
 }

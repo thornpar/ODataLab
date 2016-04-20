@@ -1,6 +1,6 @@
 ﻿angular.module("ODataLab").controller("odataIndex.controller", ['$scope', 'ODataLab.Api', function ($scope, api) {
     
-    var selectedColumns = ['Name', 'Category', 'Price'];
+    var selectedColumns = ['LastName', 'FirstName', 'ex.fn'];
 
     var kendoOptions = {
         dataSource: {
@@ -13,16 +13,16 @@
                 },
                 model: {
                     fields: {
-                        Name: { type: "string" },
-                        Price: { type: "number" },
-                        Category: { type: "string" }
+                        FirstName: { type: "string" },
+                        LastName: { type: "string" },
+                        'ex.fn': { type: "string" }
                     }
                 }
             },
             type: "odata",
             transport: {
                 read: {
-                    url: "//localhost:50005/OData/Employments",
+                    url: "//localhost:50015/OData/Employments",
                     dataType: "json",
                     data: {
                         $select: function () {
@@ -55,15 +55,16 @@
         },
         pageable: true,
         columns: [{
-            field: "Name",
-            title: "Name",
+            field: "FirstName",
+            title: "FirstName",
             width: "120px",
         }, {
-            field: "Price",
-            title: "Price",
+            field: "LastName",
+            title: "LastName",
             width: "120px"
         }, {
-            field: "Category",
+            field: "ex.fn",
+            title: "ex",
             width: "120px"
         }]
     };

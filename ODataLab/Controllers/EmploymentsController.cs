@@ -11,6 +11,7 @@ using System.Web.Http;
 using System.Web.Http.Description;
 using ODataLab.Models;
 using System.Web.Http.OData;
+using System.Dynamic;
 
 namespace ODataLab.Controllers
 {
@@ -18,21 +19,44 @@ namespace ODataLab.Controllers
     {
         public EmploymentsController()
         {
-            
+            dataBaseMock = new List<EmploymentFieldValueModel>();
+            dataBaseMock.Add(new EmploymentFieldValueModel { FieldName = "IBAN", FieldType = "String" });
+            dataBaseMock.Add(new EmploymentFieldValueModel { FieldName = "Other", FieldType = "int" });
+
+            stringMock = new List<string>();
+            stringMock.Add("IBAN");
+            stringMock.Add("OTher");
         }
+        private List<EmploymentFieldValueModel> dataBaseMock;
+        private List<string> stringMock;
         private EmploymentContext db = new EmploymentContext();
 
         // GET: api/Employments
         [EnableQuery]
-        public IQueryable<Employment> GetEmployments()
+        public IQueryable<ReturnModel> GetEmployments()
         {
-            return db.Employments;
+            Dictionary<string, string> resultSpecial = new Dictionary<string, string>();
+            resultSpecial.Add(dataBaseMock[1].FieldName, "Value of IBAN");
+            var fields = dataBaseMock.AsQueryable();
+            var testSTrings = stringMock.Select(e => e);
+
+            var result = from emp in db.Employments
+                   join person in db.People on emp.person.Id equals person.Id
+                   select new ReturnModel
+                   {
+                       FirstName = person.FirstName,
+                       LastName = person.LastName,
+                       Category = emp.Category,
+                       ex = new {fn = stringMock}
+                   };
+
+            var t = result.ToList();
+            return result;
         }
 
-        // GET: api/Employments/5
+        // GET: api/Employments1/5
         [ResponseType(typeof(Employment))]
-        [EnableQuery]
-        public async Task<IHttpActionResult> GetEmployment(int id)
+        public async Task<IHttpActionResult> GetEmployment(Guid id)
         {
             Employment employment = await db.Employments.FindAsync(id);
             if (employment == null)
@@ -43,7 +67,7 @@ namespace ODataLab.Controllers
             return Ok(employment);
         }
 
-        // PUT: api/Employments/5
+        // PUT: api/Employments1/5
         [ResponseType(typeof(void))]
         public async Task<IHttpActionResult> PutEmployment(Guid id, Employment employment)
         {
@@ -78,24 +102,27 @@ namespace ODataLab.Controllers
             return StatusCode(HttpStatusCode.NoContent);
         }
 
-        // POST: api/Employments
+        // POST: api/Employments1
         [ResponseType(typeof(Employment))]
-        public async Task<IHttpActionResult> PostEmployment(Employment employment)
+        public async Task<IHttpActionResult> Post( Employment employment)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
-
+            var person = new Person();
+            person.FirstName = "What ever";
+            person.LastName = "Some at random";
+            employment.person = person;
             db.Employments.Add(employment);
             await db.SaveChangesAsync();
 
-            return CreatedAtRoute("DefaultApi", null, employment);
+            return Created(employment);
         }
 
-        // DELETE: api/Employments/5
+        // DELETE: api/Employments1/5
         [ResponseType(typeof(Employment))]
-        public async Task<IHttpActionResult> DeleteEmployment(int id)
+        public async Task<IHttpActionResult> DeleteEmployment(Guid id)
         {
             Employment employment = await db.Employments.FindAsync(id);
             if (employment == null)

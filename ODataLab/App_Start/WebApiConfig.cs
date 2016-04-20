@@ -30,7 +30,7 @@ namespace ODataLab
             );
 
             ODataModelBuilder builder = new ODataConventionModelBuilder();
-            builder.EntitySet<Employment>("Employments");
+            builder.EntitySet<ReturnModel>("Employments");
             config.Routes.MapODataServiceRoute(
                 routeName: "ODataRoute",
                 routePrefix: "OData",
