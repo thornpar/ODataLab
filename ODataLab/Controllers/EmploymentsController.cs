@@ -12,9 +12,123 @@ using System.Web.Http.Description;
 using ODataLab.Models;
 using System.Web.Http.OData;
 using System.Dynamic;
+using System.Web.Http.OData.Query;
+using Microsoft.Data.OData.Query.SemanticAst;
+using ODataLab.Controllers;
 
 namespace ODataLab.Controllers
 {
+ 
+    public class FilterValue
+    {
+        public string ComparisonOperator { get; set; }
+        public string Value { get; set; }
+        public string FieldName { get; set; }
+        public string LogicalOperator { get; set; }
+    }
+
+    public class MyFilterValueSupplier<TSource> : QueryNodeVisitor<TSource>
+        where TSource: class
+    {
+        List<FilterValue> filterValueList = new List<FilterValue>();
+        FilterValue current = new FilterValue();
+
+        public override TSource Visit(BinaryOperatorNode nodeIn)
+        {
+            if(nodeIn.OperatorKind == Microsoft.Data.OData.Query.BinaryOperatorKind.And 
+                || nodeIn.OperatorKind == Microsoft.Data.OData.Query.BinaryOperatorKind.Or)
+            {
+                current.LogicalOperator = nodeIn.OperatorKind.ToString();
+            }
+            else
+            {
+                current.ComparisonOperator = nodeIn.OperatorKind.ToString();
+            }
+            nodeIn.Right.Accept(this);
+            nodeIn.Left.Accept(this);
+            return current as TSource;
+        }
+        public override TSource Visit(SingleValuePropertyAccessNode nodeIn)
+        {
+            current.FieldName = nodeIn.Property.Name;
+            //We are finished, add current to collection.
+            filterValueList.Add(current);
+            //Reset current
+            current = new FilterValue();
+            return current as TSource;
+        }
+
+        public override TSource Visit(ConstantNode nodeIn)
+        {
+            current.Value = nodeIn.LiteralText;
+            return current as TSource;
+        }
+
+        public override TSource Visit(AllNode nodeIn)
+        {
+            FilterValue filterValue = new FilterValue { FieldName = nodeIn.Source.Kind.ToString() };
+            filterValueList.Add(filterValue);
+            return filterValue as TSource;
+        }
+
+        public override TSource Visit(AnyNode nodeIn)
+        {
+            FilterValue filterValue = new FilterValue { FieldName = nodeIn.Source.Kind.ToString()};
+            filterValueList.Add(filterValue);
+            return filterValue as TSource;
+        }
+
+        public override TSource Visit(CollectionFunctionCallNode nodeIn)
+        {
+            FilterValue filterValue = new FilterValue { FieldName = nodeIn.Name };
+            filterValueList.Add(filterValue);
+            return filterValue as TSource;
+        }
+
+        
+
+        public override TSource Visit(CollectionNavigationNode nodeIn)
+        {
+            FilterValue filterValue = new FilterValue { FieldName = nodeIn.Kind.ToString() };
+            filterValueList.Add(filterValue);
+            return filterValue as TSource;
+        }
+        public override TSource Visit(CollectionPropertyAccessNode nodeIn)
+        {
+            FilterValue filterValue = new FilterValue { FieldName = nodeIn.Property.Name };
+            filterValueList.Add(filterValue);
+            return filterValue as TSource;
+        }
+
+        public override TSource Visit(ConvertNode nodeIn)
+        {
+            FilterValue filterValue = new FilterValue { FieldName = nodeIn.Source.TypeReference.ToString() };
+            filterValueList.Add(filterValue);
+            return filterValue as TSource;
+        }
+
+        public override TSource Visit(EntityCollectionCastNode nodeIn)
+        {
+            FilterValue filterValue = new FilterValue { FieldName = nodeIn.Kind.ToString() };
+            filterValueList.Add(filterValue);
+            return filterValue as TSource;
+        }
+
+        public override TSource Visit(SingleValueOpenPropertyAccessNode nodeIn)
+        {
+            FilterValue filterValue = new FilterValue { FieldName = nodeIn.Name};
+            filterValueList.Add(filterValue);
+            return filterValue as TSource;
+        }
+
+        public override TSource Visit(SingleEntityCastNode nodeIn)
+        {
+            FilterValue filterValue = new FilterValue { FieldName = nodeIn.Kind.ToString() };
+            filterValueList.Add(filterValue);
+            return filterValue as TSource;
+        }
+    }
+
     public class EmploymentsController : ODataController
     {
         public EmploymentsController()
@@ -33,8 +147,14 @@ namespace ODataLab.Controllers
 
         // GET: api/Employments
         [EnableQuery]
-        public IQueryable<ReturnModel> GetEmployments()
+        public IQueryable<ReturnModel> GetEmployments(ODataQueryOptions<ReturnModel> options)
         {
+            MyFilterValueSupplier<object> visitor = new MyFilterValueSupplier<object>();
+            if (options.Filter.FilterClause.Expression != null)
+            {
+                options.Filter.FilterClause.Expression.Accept(visitor);
+            }
+
             Dictionary<string, string> resultSpecial = new Dictionary<string, string>();
             resultSpecial.Add(dataBaseMock[1].FieldName, "Value of IBAN");
             var fields = dataBaseMock.AsQueryable();
@@ -46,14 +166,14 @@ namespace ODataLab.Controllers
                    {
                        FirstName = person.FirstName,
                        LastName = person.LastName,
-                       Category = emp.Category,
-                       ex = new {fn = stringMock}
+                       Category = emp.Category
                    };
 
             var t = result.ToList();
             return result;
         }
 
+        
         // GET: api/Employments1/5
         [ResponseType(typeof(Employment))]
         public async Task<IHttpActionResult> GetEmployment(Guid id)
