@@ -11,10 +11,9 @@ using System.Web.Http;
 using System.Web.Http.Description;
 using ODataLab.Models;
 using System.Web.Http.OData;
-using System.Dynamic;
 using System.Web.Http.OData.Query;
 using Microsoft.Data.OData.Query.SemanticAst;
-using ODataLab.Controllers;
+
 
 namespace ODataLab.Controllers
 {
@@ -149,28 +148,17 @@ namespace ODataLab.Controllers
         [EnableQuery]
         public IQueryable<ReturnModel> GetEmployments(ODataQueryOptions<ReturnModel> options)
         {
-            MyFilterValueSupplier<object> visitor = new MyFilterValueSupplier<object>();
-            if (options.Filter.FilterClause.Expression != null)
-            {
-                options.Filter.FilterClause.Expression.Accept(visitor);
-            }
-
-            Dictionary<string, string> resultSpecial = new Dictionary<string, string>();
-            resultSpecial.Add(dataBaseMock[1].FieldName, "Value of IBAN");
-            var fields = dataBaseMock.AsQueryable();
-            var testSTrings = stringMock.Select(e => e);
-
-            var result = from emp in db.Employments
-                   join person in db.People on emp.person.Id equals person.Id
-                   select new ReturnModel
-                   {
-                       FirstName = person.FirstName,
-                       LastName = person.LastName,
-                       Category = emp.Category
-                   };
-
+            
+            var result = (from emp in db.Employments
+                         join person in db.People on emp.person.Id equals person.Id into Collection
+                         select new ReturnModel
+                         {
+                             FirstName = emp.Name
+                         });
+            db.Database.Log = s => System.Diagnostics.Debug.WriteLine(s);
             var t = result.ToList();
-            return result;
+
+            return t.AsQueryable();
         }
 
         
@@ -187,40 +175,7 @@ namespace ODataLab.Controllers
             return Ok(employment);
         }
 
-        // PUT: api/Employments1/5
-        [ResponseType(typeof(void))]
-        public async Task<IHttpActionResult> PutEmployment(Guid id, Employment employment)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            if (id != employment.Id)
-            {
-                return BadRequest();
-            }
-
-            db.Entry(employment).State = EntityState.Modified;
-
-            try
-            {
-                await db.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!EmploymentExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return StatusCode(HttpStatusCode.NoContent);
-        }
+       
 
         // POST: api/Employments1
         [ResponseType(typeof(Employment))]
@@ -263,11 +218,6 @@ namespace ODataLab.Controllers
                 db.Dispose();
             }
             base.Dispose(disposing);
-        }
-
-        private bool EmploymentExists(Guid id)
-        {
-            return db.Employments.Count(e => e.Id == id) > 0;
         }
     }
 }

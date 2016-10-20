@@ -16,9 +16,9 @@ namespace ODataLab.Models
         }
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public Guid Id { get; set; }
+        public int Id { get; set; }
 
-        public Guid EmploymentId { get; set; }
+        public int EmploymentId { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
     }
